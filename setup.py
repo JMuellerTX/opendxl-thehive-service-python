@@ -6,6 +6,7 @@ import os
 import distutils.command.sdist
 import distutils.log
 import subprocess
+import sys
 from setuptools import Command, setup
 import setuptools.command.sdist
 
@@ -52,9 +53,10 @@ class CiCommand(Command):
         pass
     def run(self):
         self.run_command("lint")
-        self.run_command("test")
+        self.announce("Running tests", level=distutils.log.INFO)
+        subprocess.check_call([sys.executable, "-m", "pytest", "tests"])
 
-TEST_REQUIREMENTS = ["nose", "astroid<2.3.0", "pylint<=2.3.1", "mock", "requests-mock"]
+TEST_REQUIREMENTS = ["mock", "pytest", "pylint", "requests-mock"]
 
 DEV_REQUIREMENTS = TEST_REQUIREMENTS + ["sphinx"]
 
@@ -78,8 +80,6 @@ setup(
         "dev": DEV_REQUIREMENTS,
         "test": TEST_REQUIREMENTS
     },
-
-    test_suite="nose.collector",
 
     # Package author details:
     author="McAfee LLC",
@@ -109,17 +109,18 @@ setup(
     long_description=open('README').read(),
 
     # Python version requirements
-    python_requires=">=2.7.9,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+    python_requires='>=3.8',
 
     classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14"
     ],
 
     cmdclass={
