@@ -50,7 +50,7 @@ class TheHiveApiRequestCallback(RequestCallback):
         try:
             request_body = MessageUtils.json_payload_to_dict(request)
             attr_value = request_body.pop(attr_name, None)
-            if not attr_name:
+            if not attr_value:
                 raise ValueError("Attribute {} is missing".format(attr_name))
         except Exception as ex:
             request_body = {}
