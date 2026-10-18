@@ -534,4 +534,9 @@ class Sample(unittest.TestCase):
         sent_res = dxl_client.send_response.call_args[0][0]
         self.assertEqual(Message.MESSAGE_TYPE_ERROR, sent_res.message_type)
 
-
+        from dxlthehiveservice.thehive_client import TheHiveClient
+        hive_client = TheHiveClient(dxl_client, "https://localhost:9000", "key", None, False)
+        arr_req = Request("/opendxl-thehive/service/thehive-api/case/create")
+        arr_req.payload = b"[1, 2, 3]"
+        with self.assertRaises(ValueError):
+            hive_client.post(arr_req, "/api/case")

@@ -145,6 +145,8 @@ class TheHiveClient(object):
         """
         if body is None:
             body = MessageUtils.json_payload_to_dict(dxl_request)
+        if not isinstance(body, dict):
+            raise ValueError("Request payload must be a JSON object")
 
         def _handle_request(request_url, body):
             return requests.post(request_url,
