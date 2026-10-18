@@ -503,3 +503,35 @@ class Sample(unittest.TestCase):
             )
         )
         mock_print.assert_any_call(StringDoesNotMatch("Error invoking request"))
+
+    def test_id_param_path_traversal_rejected(self):
+        from mock import MagicMock
+        from dxlclient.message import Request, Message
+        from dxlthehiveservice.requesthandlers import TheHiveApiRequestCallback
+
+        for bad_id in [
+            "../admin",
+            "123/456",
+            "123\\456",
+            "123?foo=bar",
+            "123#frag",
+            "123%2f456",
+            "123 456",
+            "",
+            None,
+            True
+        ]:
+            with self.assertRaises(ValueError):
+                TheHiveApiRequestCallback._validate_id_param(bad_id)
+        self.assertEqual("123456", TheHiveApiRequestCallback._validate_id_param("123456"))
+
+        dxl_client = MagicMock()
+        cb = TheHiveApiRequestCallback(dxl_client, MagicMock())
+        req = Request("/opendxl-thehive/service/thehive-api/case/get")
+        req.payload = json.dumps({"id": "../admin"}).encode("utf-8")
+        attr_val, _ = cb._pop_id_param(req, "id")
+        self.assertIsNone(attr_val)
+        sent_res = dxl_client.send_response.call_args[0][0]
+        self.assertEqual(Message.MESSAGE_TYPE_ERROR, sent_res.message_type)
+
+

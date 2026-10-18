@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import logging
+import re
 
 from dxlclient.callbacks import RequestCallback
 from dxlclient.message import ErrorResponse
@@ -7,6 +8,8 @@ from dxlbootstrap.util import MessageUtils
 
 # Configure local logger
 logger = logging.getLogger(__name__)
+
+_INVALID_ID_CHARS = re.compile(r"[/\\?#%\s]")
 
 
 class TheHiveApiRequestCallback(RequestCallback):
@@ -33,6 +36,24 @@ class TheHiveApiRequestCallback(RequestCallback):
                     request.destination_topic,
                     MessageUtils.decode_payload(request))
 
+    @staticmethod
+    def _validate_id_param(value):
+        """
+        Validates that an identifier used in URL paths is a non-empty string or
+        integer containing no path traversal or URL delimiter characters.
+        """
+        if isinstance(value, bool) or \
+                not isinstance(value, (int, str, type(u""))):
+            raise ValueError("Invalid identifier")
+        value_str = str(value)
+        if not value_str or ".." in value_str or \
+                _INVALID_ID_CHARS.search(value_str):
+            raise ValueError("Invalid identifier")
+        return value
+
+    def _pop_id_param(self, request, attr_name):
+        return self._pop_attribute_from_request(request, attr_name)
+
     def _pop_attribute_from_request(self, request, attr_name):
         """
         Pop the value for a named attribute from the supplied request JSON
@@ -41,7 +62,7 @@ class TheHiveApiRequestCallback(RequestCallback):
         :param attr_name:
         :return:
         :raises ValueError: if the named attribute does not appear in the
-            request.
+            request or is not a valid identifier.
         :return: A tuple containing two elements: the value associated with
             the attr_name parameter and the request body (minus the attr_name
             attribute and its associated value), converted to a dict.
@@ -49,9 +70,12 @@ class TheHiveApiRequestCallback(RequestCallback):
         """
         try:
             request_body = MessageUtils.json_payload_to_dict(request)
+            if not isinstance(request_body, dict):
+                raise ValueError("Request payload must be a JSON object")
             attr_value = request_body.pop(attr_name, None)
             if not attr_value:
                 raise ValueError("Attribute {} is missing".format(attr_name))
+            self._validate_id_param(attr_value)
         except Exception as ex:
             request_body = {}
             attr_value = None
@@ -61,6 +85,7 @@ class TheHiveApiRequestCallback(RequestCallback):
                                 error_message=MessageUtils.encode(error_str))
             self._dxl_client.send_response(res)
         return (attr_value, request_body)
+
 
 
 class TheHiveCreateCaseRequestCallback(TheHiveApiRequestCallback):
